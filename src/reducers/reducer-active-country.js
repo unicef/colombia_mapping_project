@@ -28,53 +28,38 @@ function activeCountryReducer(state = {
       admin_index: admin_index
     })
   case 'DATE_SELECTED':
-    let lookup = state.admin_index
-    let mobility = action.payload.mobility;
-    let matrix = getMatrix(mobility, lookup);
-    let diagonal = get_diagonal(matrix)
-    let max = diagonal.reduce(function(a, b) {
-      return Math.max(a, b);
-    });
-    let min = diagonal.reduce(function(a, b) {
-      return Math.min(a, b);
-    });
+    let mobility = bucketBy(action.payload.mobility);
 
-    let diag_scores = diagonal.map(function(e) {
-      return score(min, max, parseInt(e))
+    mobility.forEach((e, i) => {
+      if (i%10==0) {
+        console.log(i, 'index')
+      }
+      alasql('INSERT INTO mobilities VALUES ' + e)
+    //
+    //   alasql("INSERT INTO mobilities VALUES ('" +
+    //   e.id_origin + "','" +
+    //   e.id_destination + "','" + e.people + "')");
     })
-    //  mobility = bucketBy(action.payload.mobility);
     //
-    // mobility.forEach((e, i) => {
-    //   if (i%10==0) {
-    //     console.log(i, 'index')
-    //   }
-    //   alasql('INSERT INTO mobilities VALUES ' + e)
-    // //
-    // //   alasql("INSERT INTO mobilities VALUES ('" +
-    // //   e.id_origin + "','" +
-    // //   e.id_destination + "','" + e.people + "')");
-    // })
-    // //
-    // console.log("HELP!!")
-    // let res = alasql('SELECT origin, people FROM mobilities ' +
-    // 'where origin = destination;');
-    // let range = alasql('select min(people) as min, max(people) ' +
-    // 'as max from mobilities where origin = destination');
-    //  min = range[0].min;
-    //  max = range[0].max
-    // let score_table = res.reduce((h, r) => {
-    //   h[r.origin] = score(min, max, r.people);
-    //   return h
-    // }, {})
-    // console.log('about to update mpio geojson')
-    //
-    // mpio.features.forEach(f => {
-    //   f.properties.score = score_table[f.properties.admin_id]
-    // })
-    // window.sql_scores = mpio.features.map(f => {return f.properties.score})
+
+    let res = alasql('SELECT origin, people FROM mobilities ' +
+    'where origin = destination;');
+    let range = alasql('select min(people) as min, max(people) ' +
+    'as max from mobilities where origin = destination');
+    let min = range[0].min;
+    let max = range[0].max
+    let score_table = res.reduce((h, r) => {
+      h[r.origin] = score(min, max, r.people);
+      return h
+    }, {})
+    console.log('about to update mpio geojson')
+
+    mpio.features.forEach(f => {
+      f.properties.score = score_table[f.properties.admin_id]
+    })
+
     return Object.assign({}, state, {
-      geojson: Object.assign({}, mpio),
-      diagonal: diag_scores
+      geojson: Object.assign({}, mpio)
     })
 
   default:
@@ -138,25 +123,25 @@ function score(min, max, number) {
   (top_bound - low_bound) + low_bound
 }
 
-// /**
-//  * Returns array in buckets
-//  * @param  {array} ary state
-//  * @return {boolean} boolean
-//  */
-// function bucketBy(ary) {
-//   let groupSize = 500;
-//   return ary.map(function(item, index) {
-//     return index % groupSize === 0 ?
-//       ary.slice(index, index + groupSize)
-//         .map(function(e) {
-//           return '(\'' + e.id_origin + '\', \'' +
-//             e.id_destination + '\', ' +
-//             e.people + ')'
-//         })
-//       : null;
-//   })
-//     .filter(function(item) {
-//       return item
-//     });
-// }
+/**
+ * Returns array in buckets
+ * @param  {array} ary state
+ * @return {boolean} boolean
+ */
+function bucketBy(ary) {
+  let groupSize = 500;
+  return ary.map(function(item, index) {
+    return index % groupSize === 0 ?
+      ary.slice(index, index + groupSize)
+        .map(function(e) {
+          return '(\'' + e.id_origin + '\', \'' +
+            e.id_destination + '\', ' +
+            e.people + ')'
+        })
+      : null;
+  })
+    .filter(function(item) {
+      return item
+    });
+}
 export default activeCountryReducer
