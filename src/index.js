@@ -1,4 +1,4 @@
-/* eslint-disable-next-line no-unused-vars*/
+/* eslint-disable no-unused-vars*/
 import React from 'react'
 import ReactDOM from 'react-dom';
 import thunk from 'redux-thunk';
@@ -11,7 +11,7 @@ import {
   createStore,
   applyMiddleware
 } from 'redux';
-import './index.css';
+// import './index.css';
 
 const store = createStore(allReducers, applyMiddleware(thunk));
 
